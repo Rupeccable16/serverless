@@ -4,10 +4,9 @@ This repository contains a Node.js AWS Lambda function designed for serverless d
 
 ## Deployment Options
 
-You can deploy your Lambda function using one of the following methods:
+You can deploy your Lambda function by:
 
-1. **S3 Bucket**: Upload the zipped code to an S3 bucket and provide the S3 URL during deployment.
-2. **Local Zip File**: Directly upload the zipped file while creating or updating the Lambda function.
+1. **S3 Bucket**: Upload the zipped code to an S3 bucket and provide the S3 URL during deployment to your infra.
 
 ## Prerequisites
 
