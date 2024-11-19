@@ -1,8 +1,7 @@
 name: pull_req workflow
 on:
-  push:
-    branches: 
-      - main
+  pull_request:
+    branches: [main]
 jobs:
   create-zip:
     runs-on: ubuntu-latest
