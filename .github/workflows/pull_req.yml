@@ -3,7 +3,6 @@ on:
   push:
     branches: 
       - main
-      - a08-02
 jobs:
   create-zip:
     runs-on: ubuntu-latest
