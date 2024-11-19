@@ -1,0 +1,33 @@
+name: pull_req workflow
+on:
+  push:
+    branches: 
+      - main
+      - a08-02
+jobs:
+  create-zip:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v4
+      - name: setup node
+        uses: actions/setup-node@v2
+        with:
+            node-version: '20.9.0'
+      - name: npm install
+        run: npm i
+      - name: Generate Unique Filename
+        id: filename
+        run: echo "zip_name=archive-$(date +'%Y%m%d%H%M%S').zip" >> $GITHUB_ENV
+      - name: zip folder
+        run: |
+          zip -r ${{ env.zip_name }} .
+      - name: install aws cli
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+            aws-access-key-id: ${{ secrets.DEMO_AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.DEMO_AWS_SECRET_ACCESS_KEY }}
+            aws-region: ${{ secrets.DEMO_AWS_REGION }}
+      - name: Upload to S3
+        run: |
+            aws s3 cp ${{ env.zip_name }} s3://${{ secrets.S3_BUCKET_NAME }}//${{ env.zip_name }}
