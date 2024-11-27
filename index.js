@@ -1,50 +1,35 @@
+const {SecretsManagerClient, GetSecretValueCommand} = require('@aws-sdk/client-secrets-manager');
 const sgMail = require('@sendgrid/mail')
-sgMail.setApiKey(process.env.SENDGRID_API_KEY)
+const client = new SecretsManagerClient({
+  region: "us-east-1"
+})
 
-//above is the code to send emails, check transform it, paste it inside if(!user) block and first comment and check if proper url is being created in CW logs. Test that url and then proceed to sending emails
+
 console.log('Loading function');
-// const { Sequelize, DataTypes } = require("sequelize");
 
-// const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASSWORD, {
-//   host: process.env.DB_HOST,
-//   dialect: "postgres",
-// });
+async function getSendGridApiKey() {
+  const secretName = "sendgrid_api_key"
+  try{
+    const command = GetSecretValueCommand({SecretId: secretName});
+    const result = await client.send(command);
 
-// const Verification = sequelize.define(
-//   "Verification",
-//   {
-//     user_id: {
-//       type: DataTypes.UUID,
-//       allowNull: false
-//     },
-//     id: {
-//       type: DataTypes.UUID,
-//       defaultValue: DataTypes.UUIDV4,
-//       allowNull: false,
-//       primaryKey: true,
-//     },
-//     url: {
-//       type: DataTypes.TEXT,
-//       allowNull: false, 
-//     },
-//     url_created: {
-//       type: DataTypes.DATE,
-//       defaultValue: DataTypes.NOW,
-//       allowNull: false     
-//     },
-//     expire_time: {
-//       type: DataTypes.STRING,
-//       allowNull: false
-//     }, 
-//   },
-//   {
-//     timestamps: false
-//   }
-// )
+    if ("SecretString" in data){
+      console.log('Found secret')
+      return JSON.parse(data.SecretString)
+    }
+
+  } catch(error){
+    console.log(error)
+  }
+}
 
 
+//sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 
 const handler = async (event, context) => {
+  const apiKey = await getSendGridApiKey();
+  sgMail.setApiKey(apiKey)
+  console.log('Connected to sendgrid successfully');
   var message = JSON.parse(event.Records[0].Sns.Message);
 
   var email = message.email
@@ -171,110 +156,3 @@ const handler = async (event, context) => {
 };
 
 module.exports = { handler };
-
-
-//Code for sequelize using the pooling fixes
-
-// console.log("Loading function");
-// const { Sequelize, DataTypes } = require("sequelize");
-
-// let sequelize = null;
-
-// async function initSequelize() {
-//   return new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASSWORD, {
-//     host: process.env.DB_HOST,
-//     dialect: "postgres",
-//     pool: {
-//       max: 2, // Allow up to 2 connections per invocation
-//       min: 0, // Clean up all connections after use
-//       idle: 0, // Connections are eligible for cleanup immediately
-//       acquire: 3000, // Fail fast if a connection cannot be established quickly
-//       evict: parseInt(process.env.LAMBDA_FUNCTION_TIMEOUT || "60000"), // Clean up after Lambda timeout
-//     },
-//   });
-// }
-
-// const Verification = (sequelizeInstance) =>
-//   sequelizeInstance.define(
-//     "Verification",
-//     {
-//       user_id: {
-//         type: DataTypes.UUID,
-//         allowNull: false,
-//       },
-//       id: {
-//         type: DataTypes.UUID,
-//         defaultValue: DataTypes.UUIDV4,
-//         allowNull: false,
-//         primaryKey: true,
-//       },
-//       url: {
-//         type: DataTypes.TEXT,
-//         allowNull: false,
-//       },
-//       url_created: {
-//         type: DataTypes.DATE,
-//         defaultValue: DataTypes.NOW,
-//         allowNull: false,
-//       },
-//       expire_time: {
-//         type: DataTypes.STRING,
-//         allowNull: false,
-//       },
-//     },
-//     {
-//       timestamps: false,
-//     }
-//   );
-
-// export const handler = async (event, context) => {
-//   // Reuse or initialize Sequelize instance
-//   if (!sequelize) {
-//     sequelize = await initSequelize();
-//   } else {
-//     // Reinitialize the pool for warm containers
-//     sequelize.connectionManager.initPools();
-//     if (sequelize.connectionManager.hasOwnProperty("getConnection")) {
-//       delete sequelize.connectionManager.getConnection;
-//     }
-//   }
-
-//   const VerificationModel = Verification(sequelize);
-
-//   try {
-//     // Authenticate the connection
-//     await sequelize.authenticate();
-
-//     var message = JSON.parse(event.Records[0].Sns.Message);
-
-//     // Check for existing user
-//     const user = await VerificationModel.findOne({ where: { user_id: message.user_id } });
-
-//     if (!user) {
-//       // Create a new token if user does not exist
-//       const new_token = await VerificationModel.create({
-//         user_id: message.user_id,
-//         url: `http://localhost:5000/v1/user/activate?token=${message.user_id}`,
-//         expire_time: "180000", // in milliseconds (3 min)
-//       });
-
-//       console.log("The token is", new_token.url);
-
-//       // TODO: Send Email
-//     }
-
-//     return {
-//       statusCode: 200,
-//       body: JSON.stringify({ message: "Message processed successfully" }),
-//     };
-//   } catch (error) {
-//     console.error("Error processing event:", error);
-//     return {
-//       statusCode: 500,
-//       body: JSON.stringify({ message: "Internal Server Error", error }),
-//     };
-//   } finally {
-//     // Close connections at the end of the invocation
-//     await sequelize.connectionManager.close();
-//   }
-// };
