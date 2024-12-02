@@ -8,14 +8,14 @@ const client = new SecretsManagerClient({
 console.log('Loading function');
 
 async function getSendGridApiKey() {
-  const secretName = "sendgrid_api_key"
+  const secretName = "sendgrid_api_key1"
   try{
-    const command = GetSecretValueCommand({SecretId: secretName});
-    const result = await client.send(command);
+    const command = new GetSecretValueCommand({SecretId: secretName});
+    const data = await client.send(command);
 
     if ("SecretString" in data){
       console.log('Found secret')
-      return JSON.parse(data.SecretString)
+      return data.SecretString
     }
 
   } catch(error){
